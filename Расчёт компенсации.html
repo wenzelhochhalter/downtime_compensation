@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Расчёт компенсации простоя</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        select, input {
+            width: 250px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 30px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Расчёт компенсации простоя</h1>
+    
+    <!-- Выбор автомобиля -->
+    <label for="car">Выберите автомобиль:</label>
+    <select id="car" name="car">
+        <option value="VolksWagen Polo (МКПП)">VolksWagen Polo (МКПП)</option>
+        <option value="VolksWagen Polo New (МКПП)">VolksWagen Polo New (МКПП)</option>
+        <option value="VolksWagen Polo New (АКПП)">VolksWagen Polo New (АКПП)</option>
+        <option value="VolksWagen JETTA VA3">VolksWagen JETTA VA3</option>
+        <option value="VolksWagen JETTA VA3 TOP">VolksWagen JETTA VA3 TOP</option>
+        <option value="JAC J7">JAC J7</option>
+        <option value="HAVAL JOLION">HAVAL JOLION</option>
+        <option value="BAIC U5 PLUS">BAIC U5 PLUS</option>
+        <option value="FAW Bestune B70">FAW Bestune B70</option>
+    </select>
+    
+    <!-- Выбор графика аренды -->
+    <label for="loop">Выберите график аренды:</label>
+    <select id="loop" name="loop">
+        <option value="7/0">7/0</option>
+        <option value="6/1">6/1</option>
+        <option value="3/3 (2/2)">3/3 (2/2)</option>
+    </select>
+    
+    <!-- Выбор рейтинга водителя -->
+    <label for="rate">Выберите рейтинг водителя:</label>
+    <select id="rate" name="rate">
+        <option value="Базовый">Базовый</option>
+        <option value="Бронза">Бронза</option>
+        <option value="Серебро">Серебро</option>
+        <option value="Золото">Золото</option>
+        <option value="Платина">Платина</option>
+    </select>
+    
+    <!-- Ввод времени схода с линии -->
+    <label for="time_stop">Время схода с линии (в формате hh:mm):</label>
+    <input type="time" id="time_stop" name="time_stop" required>
+    
+    <!-- Ввод времени возврата на линию -->
+    <label for="time_drive">Время возврата на линию (в формате hh:mm):</label>
+    <input type="time" id="time_drive" name="time_drive" required>
+    
+    <!-- Кнопка для расчёта -->
+    <button onclick="calculateCompensation()">Рассчитать компенсацию</button>
+    
+    <!-- Результат расчёта -->
+    <div class="result"></div>
+    
+    <script>
+        // Объект с ценами аренды для разных автомобилей и графиков
+        const prices = {
+            '7/0': {
+                'VolksWagen Polo (МКПП)': 1655,
+                'VolksWagen Polo New (МКПП)': 2015,
+                'VolksWagen Polo New (АКПП)': 2135,
+                'VolksWagen JETTA VA3': 2415,
+                'VolksWagen JETTA VA3 TOP': 2485,
+                'JAC J7': 2815,
+                'HAVAL JOLION': 2665,
+                'BAIC U5 PLUS': 2545,
+                'FAW Bestune B70': 3245
+            },
+            '6/1': {
+                'VolksWagen Polo (МКПП)': 1880,
+                'VolksWagen Polo New (МКПП)': 2350,
+                'VolksWagen Polo New (АКПП)': 2450,
+                'VolksWagen JETTA VA3': 2780,
+                'VolksWagen JETTA VA3 TOP': 2860,
+                'JAC J7': 3280,
+                'HAVAL JOLION': 3030,
+                'BAIC U5 PLUS': 2930,
+                'FAW Bestune B70': 3730
+            },
+            '3/3 (2/2)': {
+                'VolksWagen Polo (МКПП)': 1980,
+                'VolksWagen Polo New (МКПП)': 2450,
+                'VolksWagen Polo New (АКПП)': 2550,
+                'VolksWagen JETTA VA3': 2880,
+                'VolksWagen JETTA VA3 TOP': 2960,
+                'JAC J7': 3380,
+                'HAVAL JOLION': 3130,
+                'BAIC U5 PLUS': 3030,
+                'FAW Bestune B70': 3830
+            }
+        };
+
+        // Функция для конвертации времени в минуты
+        function timeToMinutes(timeString) {
+            const [hours, minutes] = timeString.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+        
+        // Функция для округления числа до двух знаков после запятой
+        function roundToTwo(num) {
+            return Math.round((num + Number.EPSILON) * 100) / 100;
+        }
+        
+        // Основная функция для расчёта компенсации
+        function calculateCompensation() {
+            // Получение выбранных значений
+            const car = document.getElementById('car').value;
+            const loop = document.getElementById('loop').value;
+            const rate = document.getElementById('rate').value;
+            const timeStop = document.getElementById('time_stop').value;
+            const timeDrive = document.getElementById('time_drive').value;
+            
+            // Определение цены аренды на основании выбранного автомобиля и графика
+            let price = prices[loop][car];
+            
+            // Скидки в зависимости от рейтинга водителя
+            let discountAmount;
+            switch(rate) {
+                case 'Базовый':
+                    discountAmount = 0;
+                    break;
+                case 'Бронза':
+                    discountAmount = 50;
+                    break;
+                case 'Серебро':
+                    discountAmount = 75;
+                    break;
+                case 'Золото':
+                    discountAmount = 100;
+                    break;
+                case 'Платина':
+                    discountAmount = 200;
+                    break;
+                default:
+                    alert('Пожалуйста, выберите рейтинг.');
+                    return;
+            }
+            
+            // Применение скидки к цене аренды
+            price -= discountAmount;
+            
+            // Проверяем, чтобы цена не стала отрицательной
+            if (price < 0) {
+                price = 0;
+            }
+            
+            // Расчёт времени простоя в минутах
+            const pauseTime = timeToMinutes(timeDrive) - timeToMinutes(timeStop);
+            
+            if (pauseTime <= 0) {
+                alert('Время возврата должно быть больше времени схода.');
+                return;
+            }
+            
+            // Формула для расчёта компенсации
+            const compensation = roundToTwo(price / 24 / 60 * pauseTime);
+            
+            // Преобразование времени простоя обратно в часы и минуты
+            const pauseHours = Math.floor(pauseTime / 60);
+            const pauseMinutes = pauseTime % 60;
+            
+            // Отображение результата
+            document.querySelector('.result').innerHTML = `
+                Время простоя: ${pauseHours} часов ${pauseMinutes} минут.<br />
+                Компенсация простоя: ${compensation} рублей.
+            `;
+        }
+    </script>
+</body>
+</html>
